@@ -6,8 +6,17 @@ const postNewCategory = async (req,res,next)=> {
     try
         {
             const category = new Category(req.body)
-            const createdCategory = await category.save()
-            return createdCategory ? res.status(200).json(createdCategory) : res.status(404).json({message: "❌ Error creating category"})
+            try 
+            {
+                const createdCategory = await category.save()                
+                return createdCategory ? res.status(200).json(createdCategory) : res.status(404).json({message: "❌ Error creating category"})
+            }
+            catch(error)
+            {
+                return res.status(404).json({message: "❌ Error creating category. Category already exists."})
+            }
+            
+            
         }
     catch (error)
         {
@@ -42,6 +51,40 @@ const getCategoryById = async(req,res,next) => {
         {
             next(error)
         }
+}
+
+const updateCategoryById = async(req,res,next) => {
+
+    try 
+    {
+        const {categoryId} = req.params
+        const categoryToUpdate = await Category.findById(categoryId)
+        const {name, questions, description, color, user} = req.body
+
+        const categoryUpdated = {
+            name: name || categoryToUpdate.name,
+            questions: questions || categoryToUpdate.questions,
+            description: description || categoryToUpdate.description,
+            color: color || categoryToUpdate.color,
+            user: user || categoryToUpdate.user
+        }
+        
+        try 
+        {
+            const category = await Category.findByIdAndUpdate(categoryId, categoryUpdated)
+            return category ? res.status(200).json(categoryUpdated) : res.status(404).json({message: "❌ Error updating category"})
+        }
+        catch(error)
+        {
+            return res.status(404).json({message: "❌ Error updating category"})
+        }        
+
+    }
+    catch (error)
+    {
+        next(error)
+    }
+
 }
 
 const getCategoryByName = async(req,res,next) => {
@@ -82,7 +125,7 @@ const deleteCategoryById = async(req,res,next) => {
                 return res.status(200).json(
                         {
                             finally: "✔️ Category deleted",
-                            deletedEvent: deleteEvent,
+                            deletedEvent: categoryToDelete,
                             test: 
                                 (await Category.findById(categoryId) === null) ? "✔️ Category deleted" : "❌ Error deleting category" 
                         
@@ -108,5 +151,6 @@ module.exports = {
     getAllCategories,
     getCategoryByName,
     getCategoryById, 
-    deleteCategoryById 
+    deleteCategoryById,
+    updateCategoryById 
 }

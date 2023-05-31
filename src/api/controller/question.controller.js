@@ -25,6 +25,22 @@ const postNewQuestion = async (req,res,next)=> {
 
             })
 
+            question.questionsRelated.forEach(async (questionId) => {
+
+                const questionRelated = await Question.findById(questionId)
+                if (questionRelated)
+                {
+                    questionRelated.questionsRelated.push(question._id)
+                    await questionRelated.save()
+                }
+                else 
+                {
+                    console.log(`❌ Question ${questionId} not found, not adding question to questionRelated`)
+                    await question.updateOne({$pull: {questionsRelated: questionId}})
+                }
+
+            })
+
             const createdQuestion = await question.save()
 
             return createdQuestion ? res.status(200).json(createdQuestion) : res.status(404).json({message: "❌ Error creating question"})
@@ -67,6 +83,41 @@ const getQuestionById = async(req,res,next) => {
 
 }
 
+const updateQuestionById = async(req,res,next) => {
+
+    try 
+    {   
+        const {questionId} = req.params
+        const questionToUpdate = await Question.findById(questionId)
+        const {question, answers, category, user, language} = req.body
+
+        const questionUpdated = {
+            question: question || questionToUpdate.question,
+            answers: answers || questionToUpdate.answers,
+            category: category || questionToUpdate.category,
+            user: user || questionToUpdate.user,
+            language: language || questionToUpdate.language
+        }
+
+        try 
+        {
+            const question = await Question.findByIdAndUpdate(questionId, questionUpdated)
+            return question ? res.status(200).json(questionUpdated) : res.status(404).json({message: "❌ Error updating question"})
+        }
+        catch (error)
+        {
+            return res.status(404).json({message: "❌ Error updating question"})
+        }
+
+
+    }
+    catch (error)
+    {
+        return next(error)
+    }
+
+}
+
 const deleteQuestionById = async(req,res,next) => {
 
 
@@ -77,6 +128,9 @@ const deleteQuestionById = async(req,res,next) => {
         
         if (questionToDelete) 
         {
+
+            await Category.updateMany({questions: questionId}, {$pull: {questions: questionId}})
+            await Question.updateMany({questionsRelated: questionId}, {$pull: {questionsRelated: questionId}})
 
             const saveDelete = {
                 question: questionToDelete.question,
@@ -127,5 +181,6 @@ module.exports = {
     getAllQuestions,
     getQuestionById,
     deleteQuestionById,
-    getQuestionsByCategoryName 
+    getQuestionsByCategoryName,
+    updateQuestionById 
 }

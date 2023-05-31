@@ -8,6 +8,12 @@ const QuestionSchema = new mongoose.Schema({
 
     },
 
+    language: {
+        type: String,
+        required: true,
+        enum: ['en', 'es', 'it', 'pt']
+    },
+
     answers: [{
         answer: {
             type: String,
@@ -26,7 +32,13 @@ const QuestionSchema = new mongoose.Schema({
     user: {
         type: mongoose.Types.ObjectId,
         ref: 'User'
-    }
+    },
+    questionsRelated: [
+        {
+            type: mongoose.Types.ObjectId,
+            ref: 'Question'
+        }
+    ] 
 })
 
 const Question = mongoose.model('Question', QuestionSchema)
