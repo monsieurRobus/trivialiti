@@ -36,8 +36,7 @@ const UserSchema = new mongoose.Schema(
 
         },
         confirmationCode: {
-            type: String,
-            required: true,
+            type: String
         },
         role: {
             type: String,
