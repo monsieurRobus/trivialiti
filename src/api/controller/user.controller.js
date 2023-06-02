@@ -12,11 +12,72 @@ const PROTOCOL = process.env.PROTOCOL || 'http'
 const ENDPOINT = process.env.ENDPOINT || '/api/v1'
 
 
+const getUser = async (req, res, next) => {
+
+    try {
+        const { id } = req.params
+        const userFound = await User.findById(id)
+
+        if(userFound)
+        {
+            return res.status(200).json(userFound)
+        }
+        else
+        {
+            return res.status(404).json({message: 'User not found'})
+        }
+    }
+    catch(error)
+    {
+        return next(error)
+    }
+}
+
+const getAllUsers = async (req, res, next) => {
+
+    try 
+        {
+            const users = await User.find()
+
+            if (!users)
+                return res.status(404).json({message: 'Users not found'})
+            else
+                return res.status(200).json(users)
+        }
+    catch(error) 
+        {
+            return next(error)
+        }
+
+}
+
+const getUsersByName = async (req, res, next) =>{
+
+    try {
+        const { name } = req.params
+        const usersFound = await User.find({name: {$regex: name, $options: 'i'}})
+
+        if(usersFound)
+        {
+            return res.status(200).json(usersFound)
+        }
+        else
+        {
+            return res.status(404).json({message: 'Users not found'})
+        }
+    }
+    catch(error)
+    {
+
+    }
+
+}
+
 const registerUser = async (req, res, next) => {
     try 
     {
         await User.syncIndexes()
-
+        req.body.avatarImg =`https://api.dicebear.com/6.x/avataaars/svg?seed=${req.body.avatar}&backgroundType=gradientLinear&backgroundColor=ffdf66&style=circle`
         let confirmationCode = randomCode()
 
         const {email,username} = req.body
@@ -56,6 +117,7 @@ const sendMailRedirect = async (req, res, next) => {
         const userDB = await User.findById(id)
         const emailEnv = process.env.EMAIL
         const passwordEnv = process.env.PASSWORD
+
 
         const transporter = nodemailer.createTransport({
             service: 'gmail',
@@ -239,6 +301,62 @@ const loginUser = async (req, res, next) => {
 
 }
 
+const getUserByUsername = async (req, res, next) => {
+
+    try {
+        const { username } = req.params
+        const userFound = await User.findOne({username})
+        if(userFound)
+            return res.status(200).json(userFound)
+        else
+            return res.status(404).json({message: 'User not found'})
+    }
+    catch(error)
+    {
+        return next(error)
+    }
+
+}
+
+const updateUser = async (req, res, next) => {
+
+    try {
+        const { id } = req.params
+        const {email, username, password, name, surname, avatar} = req.body
+
+        const userToUpdate = await User.findById(id)
+
+        if(userToUpdate)
+        {
+            const newContents = {
+                email: email || userToUpdate.email,
+                username: username || userToUpdate.username,
+                password: password || userToUpdate.password,
+                name: name || userToUpdate.name,
+                surname: surname || userToUpdate.surname,
+                avatar: avatar || userToUpdate.avatar
+            }
+            if(userToUpdate.avatar)
+            {
+                userToUpdate.avatarImg = `https://api.dicebear.com/6.x/avataaars/svg?seed=${newContents.avatar}&backgroundType=gradientLinear&backgroundColor=ffdf66&style=circle`
+            }
+        
+            const userUpdated = await User.findByIdAndUpdate(id, newContents)
+            return res.status(200).json({newContents})
+        }
+        else {
+            return res.status(404).json({message: 'User not found'})
+        }
+    }
+    catch (error)
+    {
+        return next(error)
+    }
+
+
+}
+
+
 const changePassword = async (req, res, next) => {
     try {
         const { email } = req.body
@@ -338,12 +456,42 @@ const sendPassword = async (req, res, next) => {
 
 }
 
+const deleteUser = async (req, res, next) => {
+
+    try
+    {
+        const { id } = req.params
+
+        const userDeleted = await User.findByIdAndDelete(id)
+
+        if(userDeleted)
+        {
+            return res.status(200).json({message: 'User deleted'})
+        }
+        else 
+        {
+            return res.status(404).json({message: 'User not found'})
+        }
+    }
+    catch(error)
+    {
+        return next(error)
+    }
+
+
+}
+
 module.exports = {
+    getUser,
+    getAllUsers,
+    getUserByUsername,
+    updateUser,
     registerUser,
     sendMailRedirect,
     checkNewUser,
     loginUser,
     sendPassword,
-    changePassword
+    changePassword,
+    deleteUser
 
 }
