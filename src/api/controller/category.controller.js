@@ -1,11 +1,23 @@
 const Category = require('../models/Category.model')
 const Question = require('../models/Question.model')
+const User = require('../models/User.model')
 
 const postNewCategory = async (req,res,next)=> {
 
     try
         {
-            const category = new Category(req.body)
+            const category = new Category({...req.body, user: req.user._id})
+
+            const user = await User.findById(req.user._id)
+
+            if (user) {
+                user.categories.push(category._id)
+                await user.save()
+            }
+            else {
+                return res.status(404).json({message: "❌ User not found"})
+            }
+
             try 
             {
                 const createdCategory = await category.save()                
@@ -121,6 +133,7 @@ const deleteCategoryById = async(req,res,next) => {
             {
                 // Borramos la categoría de cada una de las preguntas en las que aparece
                 await Question.updateMany({category: categoryId}, {$pull: {category: categoryId}})
+                await User.updateMany({category: categoryId}, {$pull: {category: categoryId}})
 
                 return res.status(200).json(
                         {

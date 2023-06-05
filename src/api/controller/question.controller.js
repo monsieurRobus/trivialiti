@@ -1,11 +1,21 @@
 const Question = require('../models/Question.model')
 const Category = require('../models/Category.model')
-
+const User = require('../models/User.model')
 const postNewQuestion = async (req,res,next)=> { 
 
     try 
         {
-            const question = new Question(req.body)
+            const question = new Question({...req.body,user: req.user._id})
+
+            const user = await User.findById(req.user._id)
+
+            if (user) {
+                user.questions.push(question._id)
+                await user.save()
+            }
+            else {
+                return res.status(404).json({message: "❌ User not found"})
+            }
 
             question.category.forEach(async (categoryId) => {
 
@@ -73,7 +83,8 @@ const getQuestionById = async(req,res,next) => {
 
     try 
         {
-            const questions = await Question.find({question: req.body.question})
+            const {questionId} = req.params
+            const questions = await Question.findById(questionId)
             return questions ? res.status(200).json(questions) : res.status(404).json({message: "❌ Error getting questions"})
         }
     catch(error)
@@ -131,6 +142,7 @@ const deleteQuestionById = async(req,res,next) => {
 
             await Category.updateMany({questions: questionId}, {$pull: {questions: questionId}})
             await Question.updateMany({questionsRelated: questionId}, {$pull: {questionsRelated: questionId}})
+            await User.updateMany({questions: questionId}, {$pull: {questions: questionId}})
 
             const saveDelete = {
                 question: questionToDelete.question,

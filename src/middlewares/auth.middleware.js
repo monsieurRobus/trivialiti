@@ -16,12 +16,16 @@ const isAuth = async (req,res,next) => {
         const decoded = verifyToken(token, process.env.JWT_SECRET)
         req.user = await User.findById(decoded.id)
 
-        next()
+        return next()
     }
     catch (error)
     {
         return next(error)
     }
+
+}
+
+const isPropertyOwner = async (req,res,next) => {
 
 }
 

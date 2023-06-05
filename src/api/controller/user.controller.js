@@ -89,6 +89,7 @@ const registerUser = async (req, res, next) => {
 
         if(!userExist)
             {
+                
                 const newUser = new User({...req.body, confirmationCode})
 
                 // No tenemos imagen de perfil, usaremos un avatar random de avaaaatars.io
@@ -274,7 +275,7 @@ const loginUser = async (req, res, next) => {
             if(bcrypt.compareSync(password, userDB.password))
             {
                 const token = generateToken(userDB._id,email)
-
+                req.user = userDB._id
                 res.status(200).json({
                     user: {
                         id: userDB._id,
@@ -315,6 +316,47 @@ const getUserByUsername = async (req, res, next) => {
     {
         return next(error)
     }
+
+}
+
+const modifyPassword = async (req, res, next) => {
+
+    try {
+        const userToChangePass = await User.findById(req.user._id)
+        const { oldPassword, newPassword } = req.body
+
+        if(userToChangePass) {
+            if(bcrypt.compareSync(oldPassword, userToChangePass.password))
+            {
+                const newPasswordHash = await bcrypt.hash(newPassword, 10)
+                const userUpdated = await User.findByIdAndUpdate(req.user._id, {password: newPasswordHash})
+
+                if (bcrypt.compareSync(newPassword, userUpdated.password))
+                {
+                    return res.status(200).json({
+                        updateUser: true,
+                        sendPassword: false
+                    })
+                }
+                else 
+                {
+                    return res.status(404).json({
+                        updateUser: false,
+                        sendPassword: false
+                    })
+                }
+            }
+            else 
+            {
+                return res.status(404).json({message: 'Password not valid'})
+            }
+        }
+    }
+    catch(error)
+    {
+        return next(error)
+    }
+
 
 }
 
@@ -490,6 +532,7 @@ module.exports = {
     sendMailRedirect,
     checkNewUser,
     loginUser,
+    modifyPassword,
     sendPassword,
     changePassword,
     deleteUser

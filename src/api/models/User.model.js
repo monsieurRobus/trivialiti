@@ -45,7 +45,13 @@ const UserSchema = new mongoose.Schema(
         isVerified: {
             type: Boolean,
             default: false,
-        }
+        },
+        questions: [{
+            type: mongoose.Schema.Types.ObjectId,
+        }],
+        categories: [{
+            type: mongoose.Schema.Types.ObjectId,
+        }],
 
     },
     {
